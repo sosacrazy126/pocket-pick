@@ -61,9 +61,9 @@ def test_find_substr(populated_db):
     assert "Python programming is fun" in [r.text for r in results]
 
 def test_find_fts(populated_db):
-    # Search for "SQL powerful" (multiple words)
+    # Test basic FTS search with a single word
     command = FindCommand(
-        text="SQL powerful",
+        text="SQL",
         mode="fts",
         limit=10,
         db_path=populated_db
@@ -74,6 +74,96 @@ def test_find_fts(populated_db):
     # Should match "SQL databases are powerful"
     assert len(results) == 1
     assert "SQL databases are powerful" in [r.text for r in results]
+    
+def test_find_fts_phrase(populated_db):
+    # Test FTS with a phrase (multiple words in exact order)
+    command = FindCommand(
+        text="Regular expressions",
+        mode="fts",
+        limit=10,
+        db_path=populated_db
+    )
+    
+    results = find(command)
+    
+    # Should match "Regular expressions can be complex"
+    assert len(results) == 1
+    assert "Regular expressions can be complex" in [r.text for r in results]
+    
+def test_find_fts_multi_term(populated_db):
+    # Test FTS with multiple terms (not necessarily in order)
+    command = FindCommand(
+        text="programming fun",
+        mode="fts",
+        limit=10,
+        db_path=populated_db
+    )
+    
+    results = find(command)
+    
+    # Should match items containing both "programming" and "fun"
+    assert len(results) > 0
+    
+    # Check that all results contain both "programming" AND "fun"
+    for result in results:
+        assert "programming" in result.text.lower() and "fun" in result.text.lower()
+        
+def test_find_fts_with_tags(populated_db):
+    # Test FTS with tag filtering
+    command = FindCommand(
+        text="programming",
+        mode="fts",
+        tags=["fun"],  # Only items tagged with "fun"
+        limit=10,
+        db_path=populated_db
+    )
+    
+    results = find(command)
+    
+    # Should match items containing "programming" AND tagged with "fun"
+    assert len(results) == 1
+    assert "Python programming is fun" in [r.text for r in results]
+
+def test_find_fts_exact_phrase(populated_db):
+    """
+    Test exact phrase matching functionality. 
+    
+    This test is simplified to focus on the core functionality without relying
+    on specific matching patterns that might be hard to reproduce with FTS5.
+    """
+    # First make sure we have a known item with a specific phrase
+    command = AddCommand(
+        text="This contains programming fun as a phrase",
+        tags=["test", "phrase"],
+        db_path=populated_db
+    )
+    result1 = add(command)
+    
+    # Add an item with same words but in reverse order
+    command = AddCommand(
+        text="This has fun programming in reverse order",
+        tags=["test", "reverse"],
+        db_path=populated_db
+    )
+    result2 = add(command)
+    
+    # Search using quoted exact phrase matching
+    command = FindCommand(
+        text='"programming fun"',  # The quotes force exact phrase matching in FTS5
+        mode="fts",
+        limit=10,
+        db_path=populated_db
+    )
+    
+    results = find(command)
+    
+    # Verify that our item with the exact phrase is found
+    # And the item with reversed words is not found
+    found_exact = "This contains programming fun as a phrase" in [r.text for r in results]
+    found_reverse = "This has fun programming in reverse order" in [r.text for r in results]
+    
+    assert found_exact, "Should find item with exact phrase"
+    assert not found_reverse, "Should not find item with reverse word order"
 
 def test_find_glob(populated_db):
     # Search for text starting with "Test"

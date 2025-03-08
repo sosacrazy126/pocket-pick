@@ -34,6 +34,49 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     db.execute("CREATE INDEX IF NOT EXISTS idx_pocket_pick_created ON POCKET_PICK(created)")
     db.execute("CREATE INDEX IF NOT EXISTS idx_pocket_pick_text ON POCKET_PICK(text)")
     
+    # Create FTS5 virtual table for full-text search
+    try:
+        db.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS pocket_pick_fts USING fts5(
+            text,
+            content='POCKET_PICK',
+            content_rowid='rowid'
+        )
+        """)
+        
+        # Create triggers to keep FTS index up to date
+        db.execute("""
+        CREATE TRIGGER IF NOT EXISTS pocket_pick_ai AFTER INSERT ON POCKET_PICK
+        BEGIN
+            INSERT INTO pocket_pick_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+        """)
+        
+        db.execute("""
+        CREATE TRIGGER IF NOT EXISTS pocket_pick_ad AFTER DELETE ON POCKET_PICK
+        BEGIN
+            INSERT INTO pocket_pick_fts(pocket_pick_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+        END
+        """)
+        
+        db.execute("""
+        CREATE TRIGGER IF NOT EXISTS pocket_pick_au AFTER UPDATE ON POCKET_PICK
+        BEGIN
+            INSERT INTO pocket_pick_fts(pocket_pick_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+            INSERT INTO pocket_pick_fts(rowid, text) VALUES (new.rowid, new.text);
+        END
+        """)
+        
+        # Rebuild FTS index if needed (for existing data)
+        db.execute("""
+        INSERT OR IGNORE INTO pocket_pick_fts(rowid, text)
+        SELECT rowid, text FROM POCKET_PICK
+        """)
+        
+    except sqlite3.OperationalError as e:
+        # If FTS5 is not available, log a warning but continue
+        logger.warning(f"FTS5 extension not available: {e}. Full-text search will fallback to basic search.")
+    
     # Commit changes
     db.commit()
     

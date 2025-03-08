@@ -117,7 +117,9 @@ Claude, please backup my pocket pick database to ~/Documents/pocket-pick-backup.
 Pocket Pick supports various search modes:
 
 - **substr**: (Default) Simple substring matching
-- **fts**: Full-text search that matches all words in the query
+- **fts**: Full-text search with powerful capabilities:
+  - Regular word search: Matches all words in any order (e.g., "python programming" finds entries with both words)
+  - Exact phrase search: Use quotes for exact phrase matching (e.g., `"python programming"` only finds entries with that exact phrase)
 - **glob**: SQLite glob pattern matching (e.g., "test*" matches entries starting with "test")
 - **regex**: Regular expression matching
 - **exact**: Exact string matching
