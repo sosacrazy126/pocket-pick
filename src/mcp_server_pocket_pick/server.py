@@ -80,10 +80,15 @@ class PocketTools(str, Enum):
 async def serve(sqlite_database: Path | None = None) -> None:
     logger.info(f"Starting Pocket Pick MCP server")
     
-    if sqlite_database is not None:
-        logger.info(f"Using database at {sqlite_database}")
-    else:
-        logger.info(f"Using default database at {DEFAULT_SQLITE_DATABASE_PATH}")
+    # Determine which database path to use
+    db_path = sqlite_database if sqlite_database is not None else DEFAULT_SQLITE_DATABASE_PATH
+    logger.info(f"Using database at {db_path}")
+    
+    # Initialize the database at startup to ensure it exists
+    from .modules.init_db import init_db
+    connection = init_db(db_path)
+    connection.close()
+    logger.info(f"Database initialized at {db_path}")
     
     server = Server("pocket-pick")
     
@@ -132,8 +137,16 @@ async def serve(sqlite_database: Path | None = None) -> None:
         # Override db_path if provided via command line
         if sqlite_database is not None:
             arguments["db"] = str(sqlite_database)
+        elif "db" not in arguments:
+            # Use default if not specified
+            arguments["db"] = str(DEFAULT_SQLITE_DATABASE_PATH)
         
         db_path = Path(arguments["db"])
+        
+        # Ensure the database exists and is initialized for every command
+        from .modules.init_db import init_db
+        connection = init_db(db_path)
+        connection.close()
         
         match name:
             case PocketTools.ADD:

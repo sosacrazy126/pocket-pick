@@ -24,3 +24,12 @@ claude mcp add pocket-pick \
 # List existing mcp servers
 claude mcp list
 ```
+
+## Extra Useful MCP Servers
+
+### Fetch
+
+```
+claude mcp add http-fetch -- uvx mcp-server-fetch
+```
+
