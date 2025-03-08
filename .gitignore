@@ -69,4 +69,4 @@ dmypy.json
 .vscode/
 .idea/
 *.swp
-*.swo
+*.swoai_docs/paic-pkb-repomix-output.xml
