@@ -1,14 +1,24 @@
 [project]
 name = "mcp-server-pocket-pick"
 version = "0.1.0"
-description = "Add your description here"
+description = "Your Personal Knowledge Base with MCP"
 readme = "README.md"
 authors = [
     { name = "IndyDevDan", email = "agentic@indydevdan.com" }
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "click>=8.1.7",
+    "mcp>=1.0.0",
+    "pydantic>=2.0.0",
+]
+
+[project.scripts]
+mcp-server-pocket-pick = "mcp_server_pocket_pick:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = ["pytest>=8.0.0"]
