@@ -39,13 +39,13 @@ claude mcp add pocket-pick -- \
 
 # Add the pocket-pick server to Claude Code
 claude mcp add pocket-pick -- \
-    uv --directory /path/to/pocket-pick \
+    uv --directory /path/to/pocket-pick-codebase \
     run mcp-server-pocket-pick
 
 # With custom database location
 claude mcp add pocket-pick -- \
-    uv --directory /path/to/pocket-pick \
-    run mcp-server-pocket-pick --database /path/to/my/database.db
+    uv --directory /path/to/pocket-pick-codebase \
+    run mcp-server-pocket-pick --database ./database.db
 
 # List existing MCP servers - Validate that the server is running
 claude mcp list
