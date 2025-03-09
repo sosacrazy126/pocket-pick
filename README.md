@@ -5,6 +5,8 @@ As engineers we end up reusing ideas, patterns and code snippets all the time bu
 
 With Anthropic's new MCP (Model Context Protocol) and a minimal portable database layer - we can solve this problem. Pocket Pick is your personal engineering knowledge base that lets you quickly store ideas, patterns and code snippets and gives you a DEAD SIMPLE text or tag based searching to quickly find them in the future.
 
+<img src="./images/pocket-pick.png" alt="Pocket Pick" style="max-width: 600px;">
+
 ## Features
 
 - **Personal Knowledge Base**: Store code snippets, information, and ideas
