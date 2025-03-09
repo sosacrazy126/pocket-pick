@@ -72,23 +72,21 @@ pocket backup <backup_absolute_path> \
 ```
 
 ### Example API Calls (for find modes)
-    --mode: substr | fts | glob | regex | exact (optional) \
-
 ```
 # basic sqlite substring search
-pocket add "test" --mode substr
+pocket find "test" --mode substr
 
 # full text search
-pocket add "test" --mode fts
+pocket find "test" --mode fts
 
 # glob search
-pocket add "test*" --mode glob
+pocket find "test*" --mode glob
 
 # regex search
-pocket add "^start.*test.*$" --mode regex
+pocket find "^start.*test.*$" --mode regex
 
 # exact search
-pocket add "match exactly test" --mode exact
+pocket find "match exactly test" --mode exact
 ```
 
 ## Project Structure

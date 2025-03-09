@@ -1,4 +1,5 @@
 # Pocket Pick
+> See how we used AI Coding, Claude Code, and MCP to build this tool on the [@IndyDevDan youtube channel](https://youtu.be/d-SyGA0Avtw).
 
 As engineers we end up reusing ideas, patterns and code snippets all the time but keeping track of these snippets can be hard and remembering where you stored them can be even harder. What if the exact snippet or idea you were looking for was one prompt away?
 
@@ -15,20 +16,24 @@ With Anthropic's new MCP (Model Context Protocol) and a minimal portable databas
 
 ## Installation
 
+Install uv
+
 ```bash
 # Clone the repository
 git clone https://github.com/indydevdan/pocket-pick.git
 cd pocket-pick
 
-# Install with uv
-uv install .
+# Install dependencies
+uv sync
 ```
 
 ## Usage with Claude Code
 
 ```bash
-# Basic syntax for adding MCP servers to Claude
-claude mcp add <name> <command> [args...]
+# Add the pocket-pick server to Claude Code (if you're in the directory)
+claude mcp add pocket-pick -- \
+    uv --directory . \
+    run mcp-server-pocket-pick
 
 # Add the pocket-pick server to Claude Code
 claude mcp add pocket-pick -- \
@@ -40,8 +45,11 @@ claude mcp add pocket-pick -- \
     uv --directory /path/to/pocket-pick \
     run mcp-server-pocket-pick --database /path/to/my/database.db
 
-# List existing MCP servers
+# List existing MCP servers - Validate that the server is running
 claude mcp list
+
+# Start claude code
+claude
 ```
 
 ## Pocket Pick MCP Tools
@@ -60,56 +68,56 @@ The following MCP tools are available in Pocket Pick:
 
 ## Using with Claude
 
-After setting up Pocket Pick as an MCP server, you can use it with Claude in your conversations:
+After setting up Pocket Pick as an MCP server for Claude Code, you can use it your conversations:
 
 ### Adding Items
 
+Add items directly
+
+```bash
+Add "claude mcp list" as a pocket pick item. tags: mcp, claude, code
 ```
-Claude, please save this code snippet to my pocket pick:
-```python
-def fibonacci(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return a
+
+Add items from clipboard
+
+```bash
+pbpaste and create a pocket pick item with the following tags: python, algorithm, fibonacci
 ```
-with tags python, algorithm, fibonacci
+
+### Listing Items
+List all items or tags:
+
+```
+list all my pocket picks
 ```
 
 ### Finding Items
 
-Search for items in your knowledge base:
+Search for items in your knowledge base with tags
 
 ```
-Claude, can you find snippets about "fibonacci" in my pocket pick?
+List pocket pick items with python and mcp tags
 ```
 
-Search with specific tags:
+Search for text with specific content
 
 ```
-Claude, show me all my snippets tagged with "python" and "algorithm"
+pocket pick find "python"
 ```
 
-### Managing Items
-
-List all items or tags:
-
-```
-Claude, list all my pocket picks
-Claude, what tags do I have in my pocket pick database?
-```
+### Get or Remove Items
 
 Get or remove specific items:
 
 ```
-Claude, show me the pocket pick item with ID 1234-5678-90ab-cdef
-Claude, remove the pocket pick item with ID 1234-5678-90ab-cdef
+get the pocket pick item with ID 1234-5678-90ab-cdef
+remove the pocket pick item with ID 1234-5678-90ab-cdef
 ```
 
 ### Backup
 
 ```
-Claude, please backup my pocket pick database to ~/Documents/pocket-pick-backup.db
+backup the pocket pick database to ~/Documents/pocket-pick-backup.db
 ```
 
 ## Search Modes
@@ -123,6 +131,16 @@ Pocket Pick supports various search modes:
 - **glob**: SQLite glob pattern matching (e.g., "test*" matches entries starting with "test")
 - **regex**: Regular expression matching
 - **exact**: Exact string matching
+
+Example find commands:
+
+```
+Find items containing "pyt" using substring matching
+Find items containing "def fibonacci" using full text search
+Find items containing "test*" using glob pattern matching
+Find items containing "^start.*test.*$" using regular expression matching
+Find items containing "match exactly test" using exact string matching
+```
 
 ## Database Structure
 
@@ -161,7 +179,7 @@ uv run mcp-server-pocket-pick
 uv run mcp-server-pocket-pick -v
 
 # With custom database location
-uv run mcp-server-pocket-pick --database /path/to/database.db
+uv run mcp-server-pocket-pick --database ./database.db
 ```
 
 ## Other Useful MCP Servers
