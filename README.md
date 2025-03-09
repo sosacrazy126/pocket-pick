@@ -18,7 +18,7 @@ With Anthropic's new MCP (Model Context Protocol) and a minimal portable databas
 
 ## Installation
 
-Install uv
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```bash
 # Clone the repository
