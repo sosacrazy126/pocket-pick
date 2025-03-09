@@ -44,7 +44,7 @@ claude mcp add pocket-pick -- \
 claude mcp list
 ```
 
-## MCP Tools
+## Pocket Pick MCP Tools
 
 The following MCP tools are available in Pocket Pick:
 
