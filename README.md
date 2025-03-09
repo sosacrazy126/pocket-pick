@@ -48,15 +48,15 @@ claude mcp list
 
 The following MCP tools are available in Pocket Pick:
 
-| Tool | Description |
-|------|-------------|
-| `pocket_add` | Add a new item to your knowledge base |
-| `pocket_find` | Find items by text and/or tags |
-| `pocket_list` | List all items, optionally filtered by tags |
-| `pocket_list_tags` | List all tags with their counts |
-| `pocket_remove` | Remove an item by ID |
-| `pocket_get` | Get a specific item by ID |
-| `pocket_backup` | Backup the database |
+| Tool               | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `pocket_add`       | Add a new item to your knowledge base       |
+| `pocket_find`      | Find items by text and/or tags              |
+| `pocket_list`      | List all items, optionally filtered by tags |
+| `pocket_list_tags` | List all tags with their counts             |
+| `pocket_remove`    | Remove an item by ID                        |
+| `pocket_get`       | Get a specific item by ID                   |
+| `pocket_backup`    | Backup the database                         |
 
 ## Using with Claude
 
@@ -174,5 +174,5 @@ claude mcp add http-fetch -- uvx mcp-server-fetch
 
 ---
 
-Built with ❤️ using Claude
+Built with ❤️ by [IndyDevDan](https://www.youtube.com/@indydevdan) with [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), and [Principled AI Coding](https://agenticengineer.com/principled-ai-coding)
 
