@@ -29,6 +29,26 @@ cd pocket-pick
 uv sync
 ```
 
+Usage from JSON format
+
+Default Database for Claude Code
+
+```json
+{
+    "command": "uv",
+    "args": ["--directory", ".", "run", "mcp-server-pocket-pick"]
+}
+```
+
+Custom Database for Claude Code
+
+```json
+{
+    "command": "uv",
+    "args": ["--directory", ".", "run", "mcp-server-pocket-pick", "--database", "./database.db"]
+}
+```
+
 ## Usage with Claude Code
 
 ```bash
