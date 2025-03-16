@@ -78,15 +78,17 @@ claude
 
 The following MCP tools are available in Pocket Pick:
 
-| Tool               | Description                                 |
-| ------------------ | ------------------------------------------- |
-| `pocket_add`       | Add a new item to your knowledge base       |
-| `pocket_find`      | Find items by text and/or tags              |
-| `pocket_list`      | List all items, optionally filtered by tags |
-| `pocket_list_tags` | List all tags with their counts             |
-| `pocket_remove`    | Remove an item by ID                        |
-| `pocket_get`       | Get a specific item by ID                   |
-| `pocket_backup`    | Backup the database                         |
+| Tool                 | Description                                  |
+| -------------------- | -------------------------------------------- |
+| `pocket_add`         | Add a new item to your knowledge base        |
+| `pocket_add_file`    | Add a file's content to your knowledge base  |
+| `pocket_find`        | Find items by text and/or tags               |
+| `pocket_list`        | List all items, optionally filtered by tags  |
+| `pocket_list_tags`   | List all tags with their counts              |
+| `pocket_remove`      | Remove an item by ID                         |
+| `pocket_get`         | Get a specific item by ID                    |
+| `pocket_backup`      | Backup the database                          |
+| `pocket_to_file_by_id` | Write an item's content to a file by its ID (requires absolute path) |
 
 ## Using with Claude
 
@@ -104,6 +106,12 @@ Add items from clipboard
 
 ```bash
 pbpaste and create a pocket pick item with the following tags: python, algorithm, fibonacci
+```
+
+Add items from a file
+
+```bash
+Add the contents of ~/Documents/code-snippets/fibonacci.py to pocket pick with tags: python, algorithm, fibonacci
 ```
 
 ### Listing Items
@@ -135,6 +143,16 @@ Get or remove specific items:
 get the pocket pick item with ID 1234-5678-90ab-cdef
 remove the pocket pick item with ID 1234-5678-90ab-cdef
 ```
+
+### Export to File
+
+Export a pocket pick item's content to a file by its ID. This allows you to save code snippets directly to files, create executable scripts from stored knowledge, or share content with others:
+
+```
+export the pocket pick item with ID 1234-5678-90ab-cdef to /Users/username/Documents/exported-snippet.py
+```
+
+The tool requires an absolute file path and will automatically create any necessary parent directories if they don't exist.
 
 ### Backup
 

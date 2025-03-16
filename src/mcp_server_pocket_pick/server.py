@@ -16,26 +16,35 @@ from pydantic import BaseModel
 
 from .modules.data_types import (
     AddCommand,
+    AddFileCommand,
     FindCommand, 
     ListCommand,
     ListTagsCommand,
     RemoveCommand,
     GetCommand,
     BackupCommand,
+    ToFileByIdCommand,
 )
 from .modules.functionality.add import add
+from .modules.functionality.add_file import add_file
 from .modules.functionality.find import find
 from .modules.functionality.list import list_items
 from .modules.functionality.list_tags import list_tags
 from .modules.functionality.remove import remove
 from .modules.functionality.get import get
 from .modules.functionality.backup import backup
+from .modules.functionality.to_file_by_id import to_file_by_id
 from .modules.constants import DEFAULT_SQLITE_DATABASE_PATH
 
 logger = logging.getLogger(__name__)
 
 class PocketAdd(BaseModel):
     text: str
+    tags: List[str] = []
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
+class PocketAddFile(BaseModel):
+    file_path: str
     tags: List[str] = []
     db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
 
@@ -68,14 +77,21 @@ class PocketBackup(BaseModel):
     backup_path: str
     db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
 
+class PocketToFileById(BaseModel):
+    id: str
+    output_file_path_abs: str
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
 class PocketTools(str, Enum):
     ADD = "pocket_add"
+    ADD_FILE = "pocket_add_file"
     FIND = "pocket_find"
     LIST = "pocket_list"
     LIST_TAGS = "pocket_list_tags"
     REMOVE = "pocket_remove"
     GET = "pocket_get"
     BACKUP = "pocket_backup"
+    TO_FILE_BY_ID = "pocket_to_file_by_id"
 
 async def serve(sqlite_database: Path | None = None) -> None:
     logger.info(f"Starting Pocket Pick MCP server")
@@ -99,6 +115,11 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 name=PocketTools.ADD,
                 description="Add a new item to your pocket pick database",
                 inputSchema=PocketAdd.schema(),
+            ),
+            Tool(
+                name=PocketTools.ADD_FILE,
+                description="Add a new item to your pocket pick database from a file",
+                inputSchema=PocketAddFile.schema(),
             ),
             Tool(
                 name=PocketTools.FIND,
@@ -130,6 +151,11 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 description="Backup your pocket pick database to a specified location",
                 inputSchema=PocketBackup.schema(),
             ),
+            Tool(
+                name=PocketTools.TO_FILE_BY_ID,
+                description="Write a pocket pick item's content to a file by its ID (requires absolute file path)",
+                inputSchema=PocketToFileById.schema(),
+            ),
         ]
     
     @server.call_tool()
@@ -159,6 +185,18 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 return [TextContent(
                     type="text",
                     text=f"Added item with ID: {result.id}\nText: {result.text}\nTags: {', '.join(result.tags)}"
+                )]
+            
+            case PocketTools.ADD_FILE:
+                command = AddFileCommand(
+                    file_path=arguments["file_path"],
+                    tags=arguments.get("tags", []),
+                    db_path=db_path
+                )
+                result = add_file(command)
+                return [TextContent(
+                    type="text",
+                    text=f"Added file content with ID: {result.id}\nFrom file: {arguments['file_path']}\nTags: {', '.join(result.tags)}"
                 )]
             
             case PocketTools.FIND:
@@ -296,6 +334,25 @@ async def serve(sqlite_database: Path | None = None) -> None:
                     return [TextContent(
                         type="text",
                         text=f"Failed to backup database to {command.backup_path}"
+                    )]
+            
+            case PocketTools.TO_FILE_BY_ID:
+                command = ToFileByIdCommand(
+                    id=arguments["id"],
+                    output_file_path_abs=Path(arguments["output_file_path_abs"]),
+                    db_path=db_path
+                )
+                result = to_file_by_id(command)
+                
+                if result:
+                    return [TextContent(
+                        type="text",
+                        text=f"Content written successfully to {command.output_file_path_abs}"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"Failed to write content to {command.output_file_path_abs}"
                     )]
             
             case _:

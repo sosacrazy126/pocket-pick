@@ -11,6 +11,12 @@ class AddCommand(BaseModel):
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
 
 
+class AddFileCommand(BaseModel):
+    file_path: str
+    tags: List[str] = []
+    db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
 class FindCommand(BaseModel):
     text: str
     mode: str = "substr"  # substr | fts | glob | regex | exact
@@ -43,6 +49,12 @@ class GetCommand(BaseModel):
 
 class BackupCommand(BaseModel):
     backup_path: Path
+    db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
+class ToFileByIdCommand(BaseModel):
+    id: str
+    output_file_path_abs: Path
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
 
 
