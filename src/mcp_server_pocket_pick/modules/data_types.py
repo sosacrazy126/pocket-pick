@@ -58,6 +58,26 @@ class ToFileByIdCommand(BaseModel):
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
 
 
+class ImportPatternsCommand(BaseModel):
+    descriptions_path: Path
+    extracts_path: Path
+    db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
+class ImportPatternsWithBodiesCommand(BaseModel):
+    patterns_root: Path
+    descriptions_path: Path
+    extracts_path: Path
+    db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
+class SuggestPatternTagsCommand(BaseModel):
+    pattern_path: Path
+    num_tags: int = 10
+    existing_tags: List[str] = []
+    db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
 class PocketItem(BaseModel):
     id: str
     created: datetime

@@ -15,6 +15,7 @@ With Anthropic's new MCP (Model Context Protocol) and a minimal portable databas
 - **MCP Integration**: Seamlessly works with Claude and other MCP-compatible AI assistants
 - **SQLite Backend**: Fast, reliable, and portable database storage
 - **Command-Line Interface**: Easy to use from the terminal
+- **Themes Fabric Integration**: Import and manage pattern descriptions and extracts from Themes Fabric
 
 ## Installation
 
@@ -89,6 +90,9 @@ The following MCP tools are available in Pocket Pick:
 | `pocket_get`         | Get a specific item by ID                    |
 | `pocket_backup`      | Backup the database                          |
 | `pocket_to_file_by_id` | Write an item's content to a file by its ID (requires absolute path) |
+| `pocket_import_patterns` | Import Themes Fabric patterns from descriptions and extracts JSON files |
+| `pocket_import_patterns_with_bodies` | Import Themes Fabric patterns with full pattern bodies from system.md files |
+| `pocket_suggest_pattern_tags` | Use AI to suggest relevant tags for a Themes Fabric pattern file |
 
 ## Using with Claude
 
@@ -159,6 +163,16 @@ The tool requires an absolute file path and will automatically create any necess
 ```
 backup the pocket pick database to ~/Documents/pocket-pick-backup.db
 ```
+
+## Themes Fabric Integration
+
+Pocket Pick includes integration with the Themes Fabric pattern system, allowing you to:
+
+- Import pattern descriptions and extracts into your knowledge base
+- Get AI-suggested tags for your patterns
+- Access your patterns directly through Claude conversations
+
+For details on using the Themes Fabric integration, see the [Themes Fabric Integration Guide](./ai_docs/themes_fabric_integration.md).
 
 ## Search Modes
 

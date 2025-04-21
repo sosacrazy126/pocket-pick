@@ -1,0 +1,2 @@
+- `pip install mcp[cli]`
+- `pip install typer`

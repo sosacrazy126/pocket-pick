@@ -24,6 +24,9 @@ from .modules.data_types import (
     GetCommand,
     BackupCommand,
     ToFileByIdCommand,
+    ImportPatternsCommand,
+    ImportPatternsWithBodiesCommand,
+    SuggestPatternTagsCommand,
 )
 from .modules.functionality.add import add
 from .modules.functionality.add_file import add_file
@@ -34,6 +37,9 @@ from .modules.functionality.remove import remove
 from .modules.functionality.get import get
 from .modules.functionality.backup import backup
 from .modules.functionality.to_file_by_id import to_file_by_id
+from .modules.functionality.import_patterns import import_patterns
+from .modules.functionality.import_patterns_with_bodies import import_patterns_with_bodies
+from .modules.functionality.suggest_pattern_tags import suggest_pattern_tags
 from .modules.constants import DEFAULT_SQLITE_DATABASE_PATH
 
 logger = logging.getLogger(__name__)
@@ -82,6 +88,23 @@ class PocketToFileById(BaseModel):
     output_file_path_abs: str
     db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
 
+class PocketImportPatterns(BaseModel):
+    descriptions_path: str
+    extracts_path: str
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
+class PocketImportPatternsWithBodies(BaseModel):
+    patterns_root: str
+    descriptions_path: str
+    extracts_path: str
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
+class PocketSuggestPatternTags(BaseModel):
+    pattern_path: str
+    num_tags: int = 10
+    existing_tags: List[str] = []
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
 class PocketTools(str, Enum):
     ADD = "pocket_add"
     ADD_FILE = "pocket_add_file"
@@ -92,6 +115,9 @@ class PocketTools(str, Enum):
     GET = "pocket_get"
     BACKUP = "pocket_backup"
     TO_FILE_BY_ID = "pocket_to_file_by_id"
+    IMPORT_PATTERNS = "pocket_import_patterns"
+    IMPORT_PATTERNS_WITH_BODIES = "pocket_import_patterns_with_bodies"
+    SUGGEST_PATTERN_TAGS = "pocket_suggest_pattern_tags"
 
 async def serve(sqlite_database: Path | None = None) -> None:
     logger.info(f"Starting Pocket Pick MCP server")
@@ -155,6 +181,21 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 name=PocketTools.TO_FILE_BY_ID,
                 description="Write a pocket pick item's content to a file by its ID (requires absolute file path)",
                 inputSchema=PocketToFileById.schema(),
+            ),
+            Tool(
+                name=PocketTools.IMPORT_PATTERNS,
+                description="Import Themes Fabric patterns from descriptions and extracts JSON files",
+                inputSchema=PocketImportPatterns.schema(),
+            ),
+            Tool(
+                name=PocketTools.IMPORT_PATTERNS_WITH_BODIES,
+                description="Import Themes Fabric patterns with full pattern bodies from the patterns directory",
+                inputSchema=PocketImportPatternsWithBodies.schema(),
+            ),
+            Tool(
+                name=PocketTools.SUGGEST_PATTERN_TAGS,
+                description="Use AI to suggest relevant tags for a Themes Fabric pattern file",
+                inputSchema=PocketSuggestPatternTags.schema(),
             ),
         ]
     
@@ -353,6 +394,72 @@ async def serve(sqlite_database: Path | None = None) -> None:
                     return [TextContent(
                         type="text",
                         text=f"Failed to write content to {command.output_file_path_abs}"
+                    )]
+            
+            case PocketTools.IMPORT_PATTERNS:
+                command = ImportPatternsCommand(
+                    descriptions_path=Path(arguments["descriptions_path"]),
+                    extracts_path=Path(arguments["extracts_path"]),
+                    db_path=db_path
+                )
+                results = import_patterns(command)
+                
+                if results:
+                    return [TextContent(
+                        type="text",
+                        text=f"Successfully imported {len(results)} patterns into your pocket pick database.\nFirst few patterns: {', '.join([item.tags[0] for item in results[:5]])}"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"No patterns were imported. Please check your file paths and try again."
+                    )]
+            
+            case PocketTools.IMPORT_PATTERNS_WITH_BODIES:
+                command = ImportPatternsWithBodiesCommand(
+                    patterns_root=Path(arguments["patterns_root"]),
+                    descriptions_path=Path(arguments["descriptions_path"]),
+                    extracts_path=Path(arguments["extracts_path"]),
+                    db_path=db_path
+                )
+                results = import_patterns_with_bodies(command)
+                
+                if results:
+                    # Extract pattern names for display
+                    pattern_names = []
+                    for item in results[:3]:
+                        first_line = item.text.split('\n')[0]
+                        pattern_name = first_line.strip('# ')
+                        pattern_names.append(pattern_name)
+                        
+                    return [TextContent(
+                        type="text",
+                        text=f"Successfully imported {len(results)} patterns with bodies into your pocket pick database.\nFirst few patterns: {', '.join(pattern_names)}"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"No patterns were imported. Please check your file paths and try again."
+                    )]
+            
+            case PocketTools.SUGGEST_PATTERN_TAGS:
+                command = SuggestPatternTagsCommand(
+                    pattern_path=Path(arguments["pattern_path"]),
+                    num_tags=arguments.get("num_tags", 10),
+                    existing_tags=arguments.get("existing_tags", []),
+                    db_path=db_path
+                )
+                results = suggest_pattern_tags(command)
+                
+                if results:
+                    return [TextContent(
+                        type="text",
+                        text=f"Suggested tags for {command.pattern_path.name}:\n\n{', '.join(results)}"
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"Could not generate tags for {command.pattern_path.name}. Try providing some existing tags or use a longer document."
                     )]
             
             case _:
