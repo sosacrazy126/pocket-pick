@@ -27,6 +27,9 @@ from .modules.data_types import (
     ImportPatternsCommand,
     ImportPatternsWithBodiesCommand,
     SuggestPatternTagsCommand,
+    PatternSearchCommand,
+    GetPatternCommand,
+    PatternItem,
 )
 from .modules.functionality.add import add
 from .modules.functionality.add_file import add_file
@@ -40,6 +43,7 @@ from .modules.functionality.to_file_by_id import to_file_by_id
 from .modules.functionality.import_patterns import import_patterns
 from .modules.functionality.import_patterns_with_bodies import import_patterns_with_bodies
 from .modules.functionality.suggest_pattern_tags import suggest_pattern_tags
+from .modules.functionality.search_patterns import search_patterns, get_pattern
 from .modules.constants import DEFAULT_SQLITE_DATABASE_PATH
 
 logger = logging.getLogger(__name__)
@@ -105,6 +109,19 @@ class PocketSuggestPatternTags(BaseModel):
     existing_tags: List[str] = []
     db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
 
+class PocketPatternSearch(BaseModel):
+    query: str
+    patterns_path: str = "./patterns"
+    limit: int = 5
+    fuzzy: bool = True
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
+class PocketGetPattern(BaseModel):
+    slug: str
+    patterns_path: str = "./patterns"
+    fuzzy: bool = True
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
 class PocketTools(str, Enum):
     ADD = "pocket_add"
     ADD_FILE = "pocket_add_file"
@@ -118,6 +135,8 @@ class PocketTools(str, Enum):
     IMPORT_PATTERNS = "pocket_import_patterns"
     IMPORT_PATTERNS_WITH_BODIES = "pocket_import_patterns_with_bodies"
     SUGGEST_PATTERN_TAGS = "pocket_suggest_pattern_tags"
+    PATTERN_SEARCH = "pocket_pattern_search"
+    GET_PATTERN = "pocket_get_pattern"
 
 async def serve(sqlite_database: Path | None = None) -> None:
     logger.info(f"Starting Pocket Pick MCP server")
@@ -196,6 +215,16 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 name=PocketTools.SUGGEST_PATTERN_TAGS,
                 description="Use AI to suggest relevant tags for a Themes Fabric pattern file",
                 inputSchema=PocketSuggestPatternTags.schema(),
+            ),
+            Tool(
+                name=PocketTools.PATTERN_SEARCH,
+                description="Search for patterns by slug, title, or content",
+                inputSchema=PocketPatternSearch.schema(),
+            ),
+            Tool(
+                name=PocketTools.GET_PATTERN,
+                description="Get a pattern by slug (with fuzzy matching fallback)",
+                inputSchema=PocketGetPattern.schema(),
             ),
         ]
     
@@ -461,6 +490,93 @@ async def serve(sqlite_database: Path | None = None) -> None:
                         type="text",
                         text=f"Could not generate tags for {command.pattern_path.name}. Try providing some existing tags or use a longer document."
                     )]
+            
+            case PocketTools.PATTERN_SEARCH:
+                command = PatternSearchCommand(
+                    query=arguments["query"],
+                    patterns_path=Path(arguments.get("patterns_path", "./patterns")),
+                    limit=arguments.get("limit", 5),
+                    fuzzy=arguments.get("fuzzy", True)
+                )
+                results = search_patterns(command)
+                
+                if results:
+                    # Format results
+                    output = [f"Found {len(results)} patterns matching '{command.query}':\n"]
+                    
+                    for i, item in enumerate(results, 1):
+                        # Format title and tags
+                        title_line = f"{i}. {item.title}"
+                        tags_line = f"   Tags: {', '.join(item.tags)}" if item.tags else "   No tags"
+                        
+                        # Format summary or first line of content
+                        if item.summary:
+                            summary = item.summary
+                        else:
+                            # Extract first non-empty line from content
+                            content_lines = [line.strip() for line in item.content.split('\n') if line.strip()]
+                            summary = content_lines[0] if content_lines else "No content"
+                        
+                        summary_line = f"   Summary: {summary[:100]}..." if len(summary) > 100 else f"   Summary: {summary}"
+                        
+                        # Add slug for reference
+                        slug_line = f"   Slug: {item.slug}"
+                        
+                        # Add to output
+                        output.extend([title_line, tags_line, summary_line, slug_line, ""])
+                    
+                    output.append(f"\nUse `pocket_get_pattern` with the slug to retrieve the full pattern content.")
+                    
+                    return [TextContent(
+                        type="text",
+                        text="\n".join(output)
+                    )]
+                else:
+                    return [TextContent(
+                        type="text",
+                        text=f"No patterns found matching '{command.query}'"
+                    )]
+            
+            case PocketTools.GET_PATTERN:
+                command = GetPatternCommand(
+                    slug=arguments["slug"],
+                    patterns_path=Path(arguments.get("patterns_path", "./patterns")),
+                    fuzzy=arguments.get("fuzzy", True)
+                )
+                result = get_pattern(command)
+                
+                if result:
+                    # Format the pattern content for display
+                    output = [f"# {result.title}"]
+                    
+                    if result.tags:
+                        output.append(f"\nTags: {', '.join(result.tags)}")
+                    
+                    if result.summary:
+                        output.append(f"\n## Summary\n{result.summary}")
+                    
+                    output.append(f"\n## Content\n{result.content}")
+                    
+                    return [TextContent(
+                        type="text",
+                        text="\n".join(output)
+                    )]
+                else:
+                    # Try to get similar slugs for helpful error message
+                    from .modules.functionality.index_patterns import get_similar_slugs
+                    similar_slugs = get_similar_slugs(arguments["slug"], str(Path(arguments.get("patterns_path", "./patterns"))))
+                    
+                    if similar_slugs:
+                        suggestions = ", ".join([f"`{slug}`" for slug in similar_slugs])
+                        return [TextContent(
+                            type="text",
+                            text=f"Pattern with slug '{arguments['slug']}' not found.\n\nDid you mean one of these? {suggestions}"
+                        )]
+                    else:
+                        return [TextContent(
+                            type="text",
+                            text=f"Pattern with slug '{arguments['slug']}' not found."
+                        )]
             
             case _:
                 raise ValueError(f"Unknown tool: {name}")

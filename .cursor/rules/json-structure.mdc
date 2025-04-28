@@ -1,0 +1,48 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Pattern JSON Structure
+
+The project uses two main JSON files to store pattern data:
+
+## [pattern_descriptions.json](mdc:pattern_descriptions.json)
+
+Contains metadata about each pattern in a list format:
+
+```json
+{
+  "patterns": [
+    {
+      "patternName": "agility_story",
+      "description": "Generate agile user stories and acceptance criteria following agile formats.",
+      "tags": ["DEVELOPMENT"]
+    },
+    // More patterns...
+  ]
+}
+```
+
+Key fields:
+- `patternName`: The unique identifier for the pattern
+- `description`: A short description of what the pattern does
+- `tags`: Categories or labels for organizing patterns
+
+## [pattern_extracts.json](mdc:pattern_extracts.json)
+
+Contains the actual pattern content/template:
+
+```json
+{
+  "patterns": [
+    {
+      "patternName": "agility_story",
+      "pattern_extract": "# IDENTITY and PURPOSE\n\nYou are an expert in the Agile framework..."
+    },
+    // More patterns...
+  ]
+}
+```
+
+When modifying the export script, you'll need to handle both files and understand how they relate to each other (patterns in both files share the same "patternName" identifier).

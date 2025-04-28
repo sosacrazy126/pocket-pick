@@ -11,14 +11,25 @@ The Themes Fabric integration allows you to:
 - Search and retrieve patterns using tags and text search
 - Access pattern content directly through Claude conversations
 
+## Requirements
+
+- Python 3.10 or higher (required for match-case syntax)
+- UV package manager (recommended)
+- Anthropic API access for AI-powered tag suggestions (optional)
+
 ## Setup
 
 1. Make sure you have Pocket Pick set up and registered as an MCP server for Claude:
 
 ```bash
+# Using UV (recommended)
 claude mcp add pocket-pick -- \
     uv --directory /path/to/pocket-pick-codebase \
     run mcp-server-pocket-pick
+
+# Or using Python from the virtual environment
+claude mcp add pocket-pick -- \
+    /path/to/pocket-pick-codebase/.venv/bin/python -m mcp_server_pocket_pick
 ```
 
 2. Prepare your Themes Fabric files:
@@ -90,6 +101,47 @@ Find items containing "consciousness" using full text search
 
 ```
 List all pocket pick items with the tag "themes-fabric"
+```
+
+## Slug-Based Pattern Access
+
+The slug-based pattern access allows you to directly retrieve patterns by their folder name (slug), with fuzzy matching fallback:
+
+### Searching for Patterns by Slug, Title, or Content
+
+```
+Search for patterns with query "analysis"
+```
+
+This uses the `pocket_pattern_search` MCP tool to find patterns matching the query in slugs, titles, or content, and returns a list of matches with their metadata.
+
+### Getting a Pattern by Slug
+
+```
+Get pattern with slug "analyze_paper"
+```
+
+This uses the `pocket_get_pattern` MCP tool to retrieve a specific pattern by its slug. If the exact slug is not found, it suggests similar slugs that might match what you're looking for.
+
+### Features of Slug-Based Access
+
+- **Human-readable identifiers**: Use folder names instead of opaque UUIDs
+- **Fuzzy matching**: Find patterns even with partial or approximate slugs
+- **Content-aware search**: Find patterns based on their content, not just metadata
+- **Ranked results**: Get the most relevant matches first
+- **Helpful suggestions**: When a pattern is not found, get suggestions for similar patterns
+
+## Testing the Integration
+
+Make sure to use the correct Python version when testing:
+
+```bash
+# Run all tests (always use Python 3.10+)
+.venv/bin/python -m pytest
+
+# Run just the Themes Fabric integration tests
+.venv/bin/python -m pytest src/mcp_server_pocket_pick/tests/functionality/test_fabric_integration.py
+.venv/bin/python -m pytest src/mcp_server_pocket_pick/tests/functionality/test_fabric_integration_with_bodies.py
 ```
 
 ## Pattern Structure

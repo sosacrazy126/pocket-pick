@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Pocket-Pick Project
+
+A tool for managing AI prompt patterns with export capabilities.
+
+## Key Files
+- [pattern_descriptions.json](mdc:pattern_descriptions.json) - Pattern metadata
+- [pattern_extracts.json](mdc:pattern_extracts.json) - Pattern content
+- [themes_fabric_export.py](mdc:themes_fabric_export.py) - Export script
+
+## Structure
+- `/patterns/` - Pattern template files by category
+- `/src/` - Core module code
+- `/tests/` - Test suite

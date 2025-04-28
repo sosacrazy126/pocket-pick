@@ -141,15 +141,15 @@ def test_suggest_pattern_tags_fallback(sample_pattern_file, temp_db):
         )
         
         # Run tag suggestion with fallback
-        tags = suggest_pattern_tags(command)
-        
+        resp = suggest_pattern_tags(command)
+
         # Verify fallback tags (based on keywords in the content)
-        assert len(tags) > 0
-        assert len(tags) <= 5
+        assert len(resp.tags) > 0
+        assert len(resp.tags) <= 5
         
         # Should find some of these keywords in the content
         expected_tags = ["cognition", "emergence", "collective", "intelligence", "systems"]
-        assert any(tag in tags for tag in expected_tags)
+        assert any(tag in resp.tags for tag in expected_tags)
 
 def test_suggest_pattern_tags_with_api(sample_pattern_file, temp_db):
     # Create mock objects for anthropic client
@@ -175,15 +175,15 @@ def test_suggest_pattern_tags_with_api(sample_pattern_file, temp_db):
         )
         
         # Run tag suggestion with mocked API
-        tags = suggest_pattern_tags(command)
-        
+        resp = suggest_pattern_tags(command)
+
         # Verify API-provided tags
-        assert len(tags) == 5
-        assert "cognition" in tags
-        assert "emergence" in tags
-        assert "collective-intelligence" in tags
-        assert "hyperorganism" in tags
-        assert "ritual" in tags
+        assert len(resp.tags) == 5
+        assert "cognition" in resp.tags
+        assert "emergence" in resp.tags
+        assert "collective-intelligence" in resp.tags
+        assert "hyperorganism" in resp.tags
+        assert "ritual" in resp.tags
         
         # Verify that the API was called with appropriate arguments
         mock_client.messages.create.assert_called_once()

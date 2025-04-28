@@ -37,7 +37,7 @@ Default Database for Claude Code
 ```json
 {
     "command": "uv",
-    "args": ["--directory", ".", "run", "mcp-server-pocket-pick"]
+    "args": ["run", "pocket-pick-server"]
 }
 ```
 
@@ -46,7 +46,7 @@ Custom Database for Claude Code
 ```json
 {
     "command": "uv",
-    "args": ["--directory", ".", "run", "mcp-server-pocket-pick", "--database", "./database.db"]
+    "args": ["run", "pocket-pick-server", "--database", "./database.db"]
 }
 ```
 
@@ -54,19 +54,13 @@ Custom Database for Claude Code
 
 ```bash
 # Add the pocket-pick server to Claude Code (if you're in the directory)
-claude mcp add pocket-pick -- \
-    uv --directory . \
-    run mcp-server-pocket-pick
+claude mcp add pocket-pick -- uv run pocket-pick-server
 
-# Add the pocket-pick server to Claude Code
-claude mcp add pocket-pick -- \
-    uv --directory /path/to/pocket-pick-codebase \
-    run mcp-server-pocket-pick
+# Add the pocket-pick server to Claude Code with absolute path
+claude mcp add pocket-pick -- uv --directory /path/to/pocket-pick-codebase run pocket-pick-server
 
 # With custom database location
-claude mcp add pocket-pick -- \
-    uv --directory /path/to/pocket-pick-codebase \
-    run mcp-server-pocket-pick --database ./database.db
+claude mcp add pocket-pick -- uv run pocket-pick-server --database ./database.db
 
 # List existing MCP servers - Validate that the server is running
 claude mcp list
@@ -93,6 +87,8 @@ The following MCP tools are available in Pocket Pick:
 | `pocket_import_patterns` | Import Themes Fabric patterns from descriptions and extracts JSON files |
 | `pocket_import_patterns_with_bodies` | Import Themes Fabric patterns with full pattern bodies from system.md files |
 | `pocket_suggest_pattern_tags` | Use AI to suggest relevant tags for a Themes Fabric pattern file |
+| `pocket_pattern_search` | Search for patterns by slug, title, or content |
+| `pocket_get_pattern` | Get a pattern by slug (with fuzzy matching fallback) |
 
 ## Using with Claude
 
@@ -213,27 +209,52 @@ The database file is located at `~/.pocket_pick.db` by default.
 
 ## Development
 
+### Environment Setup
+
+This project requires Python 3.10+ and uses UV for dependency management:
+
+```bash
+# Install UV if you don't have it
+# See https://docs.astral.sh/uv/getting-started/installation/ for installation instructions
+
+# Create and activate a virtual environment (optional but recommended)
+python -m venv .venv
+source .venv/bin/activate  # On Linux/Mac
+# or
+.\.venv\Scripts\activate  # On Windows
+
+# Install dependencies using UV
+uv sync
+```
+
 ### Running Tests
+
+**Important:** Always run tests using the Python interpreter from the UV environment to ensure compatibility with Python 3.10+ features.
 
 ```bash
 # Run all tests
-uv run pytest
+.venv/bin/python -m pytest
 
 # Run with verbose output
-uv run pytest -v
+.venv/bin/python -m pytest -v
+
+# Run specific test file
+.venv/bin/python -m pytest src/mcp_server_pocket_pick/tests/functionality/test_fabric_integration.py
 ```
 
 ### Running the Server Directly
 
+Always use the UV environment when running the server:
+
 ```bash
 # Start the MCP server
-uv run mcp-server-pocket-pick
+uv run pocket-pick-server
 
 # With verbose logging
-uv run mcp-server-pocket-pick -v
+uv run pocket-pick-server -v
 
 # With custom database location
-uv run mcp-server-pocket-pick --database ./database.db
+uv run pocket-pick-server --database ./database.db
 ```
 
 ## Other Useful MCP Servers

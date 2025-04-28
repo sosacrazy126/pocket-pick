@@ -1,0 +1,57 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Fixing the Themes Fabric Export Script
+
+The [themes_fabric_export.py](mdc:themes_fabric_export.py) script needs to be updated to handle the list structure in the [pattern_descriptions.json](mdc:pattern_descriptions.json) file.
+
+## Current Issue
+
+The script expects each pattern to be a dictionary with keys like 'title', 'tags', 'description', etc. However, the JSON file has a different structure with a "patterns" array containing objects with "patternName", "description", and "tags" fields.
+
+## Solution Approach
+
+The script needs to be modified to:
+
+1. Extract the "patterns" array from the loaded JSON
+2. Loop through each pattern object in the array
+3. Map the fields correctly (e.g., "patternName" → "title")
+4. Create a file for each pattern using its "patternName" value
+
+## Code Changes Needed
+
+- In the `batch_export_from_json` function, extract the patterns array
+- Modify how patterns are accessed and iterated
+- Update the field names used in `export_pattern_to_markdown`
+- Handle any missing fields gracefully
+
+After fixing, the script should be able to process the existing JSON structure without requiring changes to the data files.
+
+# Export Script Fix
+
+## Problem
+[themes_fabric_export.py](mdc:themes_fabric_export.py) fails because it tries to use dictionary methods on list data.
+
+## Fix
+Update `batch_export_from_json()`:
+```python
+def batch_export_from_json(json_path: Path):
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    
+    patterns = data.get("patterns", [])
+    
+    for pattern in patterns:
+        name = pattern.get("patternName", "untitled")
+        export_pattern_to_markdown(pattern, name)
+```
+
+Update `export_pattern_to_markdown()`:
+```python
+def export_pattern_to_markdown(pattern: dict, filename: str):
+    # Use patternName instead of title
+    title = pattern.get("patternName", "Untitled")
+    # Rest of function remains similar
+```

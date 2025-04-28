@@ -47,6 +47,12 @@ class GetCommand(BaseModel):
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
 
 
+class GetPatternCommand(BaseModel):
+    slug: str
+    patterns_path: Path = Path("./patterns")
+    fuzzy: bool = True
+
+
 class BackupCommand(BaseModel):
     backup_path: Path
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
@@ -76,6 +82,22 @@ class SuggestPatternTagsCommand(BaseModel):
     num_tags: int = 10
     existing_tags: List[str] = []
     db_path: Path = DEFAULT_SQLITE_DATABASE_PATH
+
+
+class PatternSearchCommand(BaseModel):
+    query: str
+    patterns_path: Path = Path("./patterns")
+    limit: int = 5
+    fuzzy: bool = True
+
+
+class PatternItem(BaseModel):
+    slug: str
+    title: str
+    summary: Optional[str]
+    tags: List[str]
+    content: str
+    score: float
 
 
 class PocketItem(BaseModel):

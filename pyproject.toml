@@ -1,21 +1,19 @@
 [project]
 name = "mcp-server-pocket-pick"
 version = "0.1.0"
-description = "Your Personal Knowledge Base with MCP"
+description = "Pocket Pick MCP Server implementation"
 readme = "README.md"
 authors = [
     { name = "IndyDevDan", email = "agentic@indydevdan.com" }
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "click>=8.1.7",
-    "mcp>=1.0.0",
-    "pip>=25.0.1",
-    "pydantic>=2.0.0",
+    "mcp>=1.3.0",
+    "thefuzz[speedup]>=0.20.0",
 ]
 
 [project.scripts]
-mcp-server-pocket-pick = "mcp_server_pocket_pick:main"
+pocket-pick-server = "mcp_server_pocket_pick.__main__:cli"
 
 [build-system]
 requires = ["hatchling"]
@@ -23,3 +21,6 @@ build-backend = "hatchling.build"
 
 [tool.uv]
 dev-dependencies = ["pytest>=8.0.0"]
+
+[tool.uv.sources]
+mcp-server-pocket-pick = { path = "src/mcp_server_pocket_pick" }

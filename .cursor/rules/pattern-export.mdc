@@ -1,0 +1,32 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Pattern Export Issue
+
+## Problem
+[themes_fabric_export.py](mdc:themes_fabric_export.py) expects dictionary format but [pattern_descriptions.json](mdc:pattern_descriptions.json) uses a list structure.
+
+Error: `AttributeError: 'list' object has no attribute 'get'` at line 13.
+
+## JSON Structures
+Expected:
+```json
+{
+  "pattern1": { "title": "Pattern 1", "description": "..." }
+}
+```
+
+Actual:
+```json
+{
+  "patterns": [
+    { "patternName": "pattern1", "description": "..." }
+  ]
+}
+```
+
+## Fix Options
+1. Modify script to handle list structure
+2. Convert JSON to expected dictionary format
