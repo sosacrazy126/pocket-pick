@@ -1,15 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Sequence, List
+from typing import List
 from mcp.server import Server
-from mcp.server.session import ServerSession
 from mcp.server.stdio import stdio_server
 from mcp.types import (
-    ClientCapabilities,
     TextContent,
     Tool,
-    ListRootsResult,
-    RootsCapability,
 )
 from enum import Enum
 from pydantic import BaseModel
@@ -29,7 +25,6 @@ from .modules.data_types import (
     SuggestPatternTagsCommand,
     PatternSearchCommand,
     GetPatternCommand,
-    PatternItem,
 )
 from .modules.functionality.add import add
 from .modules.functionality.add_file import add_file
@@ -60,7 +55,7 @@ class PocketAddFile(BaseModel):
 
 class PocketFind(BaseModel):
     text: str
-    mode: str = "substr"
+    mode: str = "hybrid"  # Changed default to hybrid for better search results
     limit: int = 5
     info: bool = False
     tags: List[str] = []
@@ -122,6 +117,17 @@ class PocketGetPattern(BaseModel):
     fuzzy: bool = True
     db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
 
+class PocketGenerateEmbeddings(BaseModel):
+    batch_size: int = 32
+    force_regenerate: bool = False
+    db: str = str(DEFAULT_SQLITE_DATABASE_PATH)
+
+class PocketClearCache(BaseModel):
+    cache_type: str = "all"  # all, embeddings, search_results, pattern_index
+    
+class PocketCacheStats(BaseModel):
+    detailed: bool = False
+
 class PocketTools(str, Enum):
     ADD = "pocket_add"
     ADD_FILE = "pocket_add_file"
@@ -137,6 +143,9 @@ class PocketTools(str, Enum):
     SUGGEST_PATTERN_TAGS = "pocket_suggest_pattern_tags"
     PATTERN_SEARCH = "pocket_pattern_search"
     GET_PATTERN = "pocket_get_pattern"
+    GENERATE_EMBEDDINGS = "pocket_generate_embeddings"
+    CLEAR_CACHE = "pocket_clear_cache"
+    CACHE_STATS = "pocket_cache_stats"
 
 async def serve(sqlite_database: Path | None = None) -> None:
     logger.info(f"Starting Pocket Pick MCP server")
@@ -225,6 +234,21 @@ async def serve(sqlite_database: Path | None = None) -> None:
                 name=PocketTools.GET_PATTERN,
                 description="Get a pattern by slug (with fuzzy matching fallback)",
                 inputSchema=PocketGetPattern.schema(),
+            ),
+            Tool(
+                name=PocketTools.GENERATE_EMBEDDINGS,
+                description="Generate embeddings for all items in the database",
+                inputSchema=PocketGenerateEmbeddings.schema(),
+            ),
+            Tool(
+                name=PocketTools.CLEAR_CACHE,
+                description="Clear various caches (embeddings, search results, pattern index)",
+                inputSchema=PocketClearCache.schema(),
+            ),
+            Tool(
+                name=PocketTools.CACHE_STATS,
+                description="Get statistics about cache usage and performance",
+                inputSchema=PocketCacheStats.schema(),
             ),
         ]
     
@@ -577,6 +601,103 @@ async def serve(sqlite_database: Path | None = None) -> None:
                             type="text",
                             text=f"Pattern with slug '{arguments['slug']}' not found."
                         )]
+            
+            case PocketTools.GENERATE_EMBEDDINGS:
+                from .modules.search_engine import HybridSearchEngine
+                
+                batch_size = arguments.get("batch_size", 32)
+                force_regenerate = arguments.get("force_regenerate", False)
+                
+                try:
+                    search_engine = HybridSearchEngine()
+                    success = await search_engine.ensure_embeddings_exist(db_path, batch_size)
+                    
+                    if success:
+                        return [TextContent(
+                            type="text",
+                            text=f"Successfully generated/updated embeddings for all items in the database (batch size: {batch_size})"
+                        )]
+                    else:
+                        return [TextContent(
+                            type="text",
+                            text="Failed to generate embeddings. Check logs for details."
+                        )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Error generating embeddings: {str(e)}"
+                    )]
+            
+            case PocketTools.CLEAR_CACHE:
+                from .modules.cache_layer import get_cache_manager
+                
+                cache_type = arguments.get("cache_type", "all")
+                cache_manager = get_cache_manager()
+                
+                try:
+                    if cache_type == "all":
+                        cache_manager.clear_all()
+                        message = "All caches cleared"
+                    elif cache_type == "embeddings":
+                        cache_manager.embeddings.clear()
+                        message = "Embedding cache cleared"
+                    elif cache_type == "search_results":
+                        cache_manager.search_results.clear()
+                        message = "Search results cache cleared"
+                    elif cache_type == "pattern_index":
+                        cache_manager.pattern_index.clear()
+                        message = "Pattern index cache cleared"
+                    else:
+                        return [TextContent(
+                            type="text",
+                            text=f"Unknown cache type: {cache_type}. Valid types: all, embeddings, search_results, pattern_index"
+                        )]
+                    
+                    return [TextContent(
+                        type="text",
+                        text=message
+                    )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Error clearing cache: {str(e)}"
+                    )]
+            
+            case PocketTools.CACHE_STATS:
+                from .modules.cache_layer import get_cache_manager
+                
+                detailed = arguments.get("detailed", False)
+                cache_manager = get_cache_manager()
+                
+                try:
+                    stats = cache_manager.get_stats()
+                    
+                    if detailed:
+                        import json
+                        stats_json = json.dumps(stats, indent=2, default=str)
+                        return [TextContent(
+                            type="text",
+                            text=f"Detailed Cache Statistics:\n```json\n{stats_json}\n```"
+                        )]
+                    else:
+                        # Simple summary
+                        summary_lines = [
+                            "Cache Statistics Summary:",
+                            f"- Embedding cache size: {stats.get('embeddings', {}).get('memory_cache', {}).get('size', 'N/A')}",
+                            f"- Search results cache size: {stats.get('search_results', {}).get('size', 'N/A')}",
+                            f"- Pattern index cache size: {stats.get('pattern_index', {}).get('size', 'N/A')}",
+                            f"- Cache directory: {stats.get('cache_directory', 'N/A')}"
+                        ]
+                        
+                        return [TextContent(
+                            type="text",
+                            text="\n".join(summary_lines)
+                        )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Error getting cache stats: {str(e)}"
+                    )]
             
             case _:
                 raise ValueError(f"Unknown tool: {name}")

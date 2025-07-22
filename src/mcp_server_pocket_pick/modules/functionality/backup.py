@@ -1,4 +1,3 @@
-import sqlite3
 import shutil
 import logging
 from ..data_types import BackupCommand
