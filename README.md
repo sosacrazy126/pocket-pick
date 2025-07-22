@@ -11,9 +11,17 @@ With Anthropic's new MCP (Model Context Protocol) and a minimal portable databas
 
 - **Personal Knowledge Base**: Store code snippets, information, and ideas
 - **Tag-Based Organization**: Add tags to categorize and filter your knowledge
-- **Flexible Search**: Find content using substring, full-text, glob, regex, or exact matching
+- **Advanced Search Capabilities**: Multiple search modes including:
+  - Traditional text search (substring, full-text, glob, regex, exact)
+  - **Vector Similarity Search**: Semantic search using embeddings
+  - **Hybrid Search**: Combines text, vector, and fuzzy matching for optimal results
+- **Vector Embeddings**: Powered by `all-MiniLM-L6-v2` model (384-dimensional embeddings)
+- **Performance Optimizations**:
+  - Connection pooling for database efficiency
+  - Multi-layer caching system for search results and embeddings
+  - Asynchronous processing capabilities
 - **MCP Integration**: Seamlessly works with Claude and other MCP-compatible AI assistants
-- **SQLite Backend**: Fast, reliable, and portable database storage
+- **SQLite Backend**: Fast, reliable, and portable database storage with FTS5 support
 - **Command-Line Interface**: Easy to use from the terminal
 - **Themes Fabric Integration**: Import and manage pattern descriptions and extracts from Themes Fabric
 
@@ -77,7 +85,7 @@ The following MCP tools are available in Pocket Pick:
 | -------------------- | -------------------------------------------- |
 | `pocket_add`         | Add a new item to your knowledge base        |
 | `pocket_add_file`    | Add a file's content to your knowledge base  |
-| `pocket_find`        | Find items by text and/or tags               |
+| `pocket_find`        | Find items by text and/or tags with multiple search modes |
 | `pocket_list`        | List all items, optionally filtered by tags  |
 | `pocket_list_tags`   | List all tags with their counts              |
 | `pocket_remove`      | Remove an item by ID                         |
@@ -89,6 +97,9 @@ The following MCP tools are available in Pocket Pick:
 | `pocket_suggest_pattern_tags` | Use AI to suggest relevant tags for a Themes Fabric pattern file |
 | `pocket_pattern_search` | Search for patterns by slug, title, or content |
 | `pocket_get_pattern` | Get a pattern by slug (with fuzzy matching fallback) |
+| `pocket_generate_embeddings` | Generate vector embeddings for all items in the database |
+| `pocket_clear_cache` | Clear various caches (embeddings, search results, pattern index) |
+| `pocket_cache_stats` | Get statistics about cache usage and performance |
 
 ## Using with Claude
 
@@ -172,40 +183,119 @@ For details on using the Themes Fabric integration, see the [Themes Fabric Integ
 
 ## Search Modes
 
-Pocket Pick supports various search modes:
+Pocket Pick supports various search modes for different use cases:
 
+### Traditional Search Modes
 - **substr**: (Default) Simple substring matching
-- **fts**: Full-text search with powerful capabilities:
+- **fts**: Full-text search with SQLite FTS5 capabilities:
   - Regular word search: Matches all words in any order (e.g., "python programming" finds entries with both words)
   - Exact phrase search: Use quotes for exact phrase matching (e.g., `"python programming"` only finds entries with that exact phrase)
 - **glob**: SQLite glob pattern matching (e.g., "test*" matches entries starting with "test")
 - **regex**: Regular expression matching
 - **exact**: Exact string matching
 
-Example find commands:
+### Advanced Search Modes
+- **vector**: Pure semantic similarity search using vector embeddings
+  - Finds content with similar meaning, even without exact word matches
+  - Powered by the `all-MiniLM-L6-v2` sentence transformer model
+- **hybrid**: **Intelligent combined search** (recommended for best results)
+  - Combines vector similarity, full-text search, and fuzzy matching
+  - Automatically weights and ranks results from multiple search methods
+  - Provides the most comprehensive and relevant search results
 
-```
+### Search Mode Examples
+
+```bash
+# Traditional searches
 Find items containing "pyt" using substring matching
 Find items containing "def fibonacci" using full text search
 Find items containing "test*" using glob pattern matching
 Find items containing "^start.*test.*$" using regular expression matching
 Find items containing "match exactly test" using exact string matching
+
+# Advanced semantic searches
+Find items about "async patterns" using vector search
+Find items about "performance optimization" using hybrid search
+Find items about "machine learning concepts" using vector search
 ```
 
 ## Database Structure
 
-Pocket Pick uses a simple SQLite database with the following schema:
+Pocket Pick uses an enhanced SQLite database with vector embedding support:
 
 ```sql
 CREATE TABLE POCKET_PICK (
-    id TEXT PRIMARY KEY,        -- UUID identifier
-    created TIMESTAMP NOT NULL, -- Creation timestamp
-    text TEXT NOT NULL,         -- Item content
-    tags TEXT NOT NULL          -- JSON array of tags
-)
+    id TEXT PRIMARY KEY,                              -- UUID identifier
+    created TIMESTAMP NOT NULL,                       -- Creation timestamp
+    text TEXT NOT NULL,                               -- Item content
+    tags TEXT NOT NULL,                               -- JSON array of tags
+    embedding BLOB,                                   -- Vector embedding data
+    embedding_model TEXT DEFAULT 'all-MiniLM-L6-v2', -- Embedding model used
+    embedding_updated TIMESTAMP                       -- Last embedding update
+);
+
+-- FTS5 virtual table for full-text search
+CREATE VIRTUAL TABLE pocket_pick_fts USING fts5(
+    text,
+    content='POCKET_PICK',
+    content_rowid='rowid'
+);
 ```
 
+### Database Features
+- **Automatic Schema Migration**: Existing databases are automatically upgraded to support new features
+- **FTS5 Full-Text Search**: Provides advanced text search capabilities
+- **Vector Embedding Storage**: Stores 384-dimensional embeddings for semantic search
+- **Performance Optimizations**: 
+  - WAL journaling mode for better concurrency
+  - Connection pooling for efficiency
+  - Comprehensive indexing for fast queries
+
 The database file is located at `~/.pocket_pick.db` by default.
+
+## Advanced Features
+
+### Vector Embeddings
+Pocket Pick automatically generates vector embeddings for all stored content using the `all-MiniLM-L6-v2` model. These embeddings enable:
+- Semantic similarity search that finds related content even without exact keyword matches
+- Hybrid search that combines multiple search strategies for optimal results
+- Intelligent content clustering and organization
+
+### Caching System
+The tool includes a multi-layer caching system for optimal performance:
+- **Embedding Cache**: Stores generated embeddings to avoid recomputation
+- **Search Result Cache**: Caches frequent search queries for faster responses
+- **Pattern Index Cache**: Optimizes Themes Fabric pattern lookups
+
+### Performance Optimizations
+- **Connection Pooling**: Efficient database connection management
+- **Asynchronous Processing**: Non-blocking operations for better responsiveness
+- **Batch Processing**: Optimized embedding generation for multiple items
+- **Thread-Safe Operations**: Proper handling of concurrent database access
+
+### Troubleshooting
+
+#### Database Migration Issues
+If you encounter schema migration errors, the database will automatically upgrade to support new features. This includes:
+- Adding embedding columns for vector search
+- Creating FTS5 virtual tables for full-text search
+- Setting up proper indexing for performance
+
+#### Thread Safety
+The tool includes proper SQLite thread safety handling with `check_same_thread=False` to support concurrent operations from MCP clients.
+
+#### Cache Management
+Use the cache management tools to optimize performance:
+```bash
+# Generate embeddings for all items
+pocket_generate_embeddings
+
+# Clear all caches
+pocket_clear_cache
+
+# View cache statistics
+pocket_cache_stats
+```
 
 ## Development
 
